@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- These headers are required for SharedArrayBuffer and FFmpeg processing -->
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
+    <title>Instagram Story Cropper</title>
+    <!-- FFmpeg script loading -->
+    <script>
+      // Define a global object to manage module script loading
+      window.moduleLoadingPromises = {};
+    </script>
+  </head>
+  <body>
+    <div id="app" vaul-drawer-wrapper></div>
+    <script type="module" src="/src/main.ts"></script>
+    <!-- Polyfill for SharedArrayBuffer support check -->
+    <script>
+      // Check if browser supports required features
+      if (typeof SharedArrayBuffer === 'undefined') {
+        console.warn('SharedArrayBuffer is not supported in this browser. FFmpeg processing will not work.');
+        document.body.classList.add('no-shared-array-buffer');
+      }
+      if (typeof Worker === 'undefined') {
+        console.warn('Web Workers are not supported in this browser. FFmpeg processing will not work.');
+        document.body.classList.add('no-web-workers');
+      }
+    </script>
+  </body>
+</html>
