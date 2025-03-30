@@ -83,7 +83,7 @@ const containerClasses = computed(() => {
 
 <template>
   <div 
-    class="w-full flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-xl p-6 sm:p-10 transition-all duration-200 bg-card/50 hover:bg-card/80"
+    class="flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-xl p-6 sm:p-10 transition-all duration-200 bg-card/50 scale-100 hover:bg-card/80"
     :class="containerClasses"
     @dragover="handleDragOver"
     @dragleave="handleDragLeave"

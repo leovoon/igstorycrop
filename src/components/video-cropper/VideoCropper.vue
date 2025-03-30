@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useToast } from '@/components/ui/toast/use-toast'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Download, AlertTriangle, RefreshCw } from 'lucide-vue-next'
+import { Download, AlertTriangle, RefreshCw, CircleFadingPlus } from 'lucide-vue-next'
 import VideoUploader from './VideoUploader.vue'
 import VideoPlayer from './VideoPlayer.vue'
 import { loadFFmpeg, cropVideo, unloadFFmpeg } from '@/lib/ffmpeg'
@@ -42,10 +42,10 @@ onMounted(async () => {
     state.value.isFFmpegReady = true
   } catch (error) {
     console.error('FFmpeg initialization error:', error)
-    state.value.error = error instanceof Error 
-      ? `Failed to load video processing engine: ${error.message}` 
+    state.value.error = error instanceof Error
+      ? `Failed to load video processing engine: ${error.message}`
       : 'Failed to load video processing engine.'
-    
+
     toast({
       title: 'Initialization Error',
       description: 'Could not load the video processing engine. Please refresh and try again.',
@@ -64,7 +64,7 @@ onUnmounted(() => {
 const handleFileSelected = (file: File) => {
   // Clean up previous video if it exists
   cleanupResources()
-  
+
   state.value.videoFile = file
   state.value.videoUrl = URL.createObjectURL(file)
   state.value.isVideoLoaded = true
@@ -81,19 +81,19 @@ const handleCrop = async (params: VideoCropParams) => {
     })
     return
   }
-  
+
   try {
     state.value.isCropping = true
     state.value.progress = 0
     state.value.error = null
-    
+
     console.log('Starting video conversion operation...')
     const croppedBlob = await cropVideo(params)
-    
+
     // Create URL for the converted video
     state.value.croppedVideoUrl = URL.createObjectURL(croppedBlob)
     console.log('Conversion operation completed successfully!')
-    
+
     toast({
       title: 'Success!',
       description: 'Your video has been converted to 9:16 ratio',
@@ -101,10 +101,10 @@ const handleCrop = async (params: VideoCropParams) => {
     })
   } catch (error) {
     console.error('Conversion error:', error)
-    state.value.error = error instanceof Error 
-      ? `Failed to convert video: ${error.message}` 
+    state.value.error = error instanceof Error
+      ? `Failed to convert video: ${error.message}`
       : 'Failed to convert video. Please try again.'
-    
+
     toast({
       title: 'Conversion failed',
       description: 'There was an error while processing your video',
@@ -128,7 +128,7 @@ const handleReset = () => {
 // Download converted video
 const downloadCroppedVideo = () => {
   if (!state.value.croppedVideoUrl) return
-  
+
   const a = document.createElement('a')
   a.href = state.value.croppedVideoUrl
   a.download = 'instagram-story.mp4'
@@ -147,7 +147,7 @@ const cleanupResources = () => {
   if (state.value.videoUrl) {
     URL.revokeObjectURL(state.value.videoUrl)
   }
-  
+
   if (state.value.croppedVideoUrl) {
     URL.revokeObjectURL(state.value.croppedVideoUrl)
   }
@@ -157,10 +157,61 @@ const cleanupResources = () => {
 const handleReload = () => {
   window.location.reload()
 }
+
+// Share to Instagram Stories
+const shareToInstagram = async () => {
+  if (!state.value.croppedVideoUrl) return
+
+  try {
+    // Check if on mobile device where Instagram sharing is supported
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
+    if (isMobile) {
+      // On mobile, we can try to use the Web Share API with a direct Instagram intent
+      if (navigator.share) {
+        // First try to get the file
+        const response = await fetch(state.value.croppedVideoUrl)
+        const blob = await response.blob()
+        const file = new File([blob], 'instagram-story.mp4', { type: 'video/mp4' })
+
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Instagram Story Video',
+          })
+          toast({
+            title: 'Success',
+            description: 'Video shared successfully',
+          })
+        } catch (error) {
+          // Fallback to direct Instagram URL
+          window.location.href = `instagram://library?AssetPath=${encodeURIComponent(state.value.croppedVideoUrl)}`
+        }
+      } else {
+        // Direct Instagram URL as fallback
+        window.location.href = `instagram://library?AssetPath=${encodeURIComponent(state.value.croppedVideoUrl)}`
+      }
+    } else {
+      // On desktop, provide instructions
+      toast({
+        title: 'Desktop Sharing',
+        description: 'Please download the video and upload it to Instagram from your mobile device.',
+        duration: 5000,
+      })
+    }
+  } catch (error) {
+    console.error('Error sharing to Instagram:', error)
+    toast({
+      title: 'Sharing Failed',
+      description: 'Could not share to Instagram. Please download and share manually.',
+      variant: 'destructive',
+    })
+  }
+}
 </script>
 
 <template>
-  <div class="w-full max-w-4xl mx-auto p-1">
+  <div class="w-full max-w-4xl mx-auto">
     <div class="flex flex-col gap-6">
       <!-- Browser compatibility warning -->
       <div v-if="!isBrowserSupported" class="p-4 bg-destructive/10 border border-destructive rounded-md">
@@ -175,64 +226,56 @@ const handleReload = () => {
           </div>
         </div>
       </div>
-      
+
       <!-- Upload section -->
       <div v-if="!state.videoUrl && isBrowserSupported" class="w-full">
-        <VideoUploader 
-          :is-loading="state.isCropping" 
-          @file-selected="handleFileSelected" 
-        />
+        <VideoUploader :is-loading="state.isCropping" @file-selected="handleFileSelected" />
       </div>
-      
+
       <!-- Video player and conversion -->
       <div v-if="state.videoUrl && !state.croppedVideoUrl" class="w-full">
-        <VideoPlayer 
-          :video-url="state.videoUrl" 
-          :is-processing="state.isCropping"
-          @crop="handleCrop"
-          @reset="handleReset"
-        />
-        
+        <VideoPlayer :video-url="state.videoUrl" :is-processing="state.isCropping" @crop="handleCrop"
+          @reset="handleReset" />
+
         <!-- Processing indicator -->
         <div v-if="state.isCropping" class="mt-6">
           <div class="text-center mb-2">
             <p class="text-sm font-medium">Processing video: {{ state.progress }}%</p>
           </div>
           <div class="w-full bg-muted rounded-full h-2.5">
-            <div 
-              class="bg-primary h-2.5 rounded-full" 
-              :style="`width: ${state.progress}%`"
-            ></div>
+            <div class="bg-primary h-2.5 rounded-full" :style="`width: ${state.progress}%`"></div>
           </div>
         </div>
       </div>
-      
+
       <!-- Result section -->
       <div v-if="state.croppedVideoUrl" class="w-full">
-        <div class="flex flex-col items-center gap-4">
+        <div class="flex flex-col items-center gap-2">
           <h3 class="text-xl font-semibold">Your 9:16 video is ready!</h3>
-          
+
           <div class="w-full max-w-md aspect-[9/16] bg-muted rounded-lg overflow-hidden">
-            <video 
-              controls 
-              class="w-full h-full object-cover" 
-              :src="state.croppedVideoUrl"
-            ></video>
+            <video controls class="w-full h-full object-cover" :src="state.croppedVideoUrl"></video>
           </div>
-          
-          <div class="flex gap-4 flex-wrap justify-center">
+
+          <div class="flex gap-4 flex-wrap justify-center p-4">
             <Button @click="downloadCroppedVideo" variant="default">
               <Download class="mr-2 h-4 w-4" />
               Download Video
             </Button>
-            
+
+            <Button v-if="state.croppedVideoUrl" @click="shareToInstagram" variant="secondary" size="lg"
+              class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-none">
+              <CircleFadingPlus class="mr-2 h-5 w-5" />
+              Share to Instagram
+            </Button>
+
             <Button @click="handleReset" variant="outline">
               Convert Another Video
             </Button>
           </div>
         </div>
       </div>
-      
+
       <!-- Error message -->
       <div v-if="state.error" class="p-4 bg-destructive/10 border border-destructive rounded-md text-destructive">
         <div class="flex items-start gap-3">
@@ -247,7 +290,7 @@ const handleReload = () => {
         </div>
       </div>
     </div>
-    
+
     <!-- Loading indicators -->
     <div v-if="!state.isFFmpegReady && !state.error && isBrowserSupported" class="mt-8">
       <p class="text-sm mb-3">Loading video processing engine...</p>
@@ -255,8 +298,8 @@ const handleReload = () => {
         <Skeleton class="h-4 w-3/4" />
         <Skeleton class="h-4 w-1/2" />
       </div>
-    
-  
+
+
     </div>
   </div>
 </template>

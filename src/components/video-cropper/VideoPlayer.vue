@@ -4,7 +4,7 @@ import videojs from 'video.js'
 import type Player from 'video.js/dist/types/player'
 import 'video.js/dist/video-js.css'
 import { Button } from '@/components/ui/button'
-import { Cpu, RefreshCw, Download, Instagram } from 'lucide-vue-next'
+import { Cpu, RefreshCw, Download,  } from 'lucide-vue-next'
 import type { VideoCropParams } from '@/types/video'
 
 const props = defineProps<{
@@ -126,7 +126,7 @@ watch(() => props.videoUrl, (newUrl) => {
 
 <template>
   <div class="w-full">
-    <div class="relative mb-6 rounded-lg overflow-hidden shadow-xl">
+    <div class="relative rounded-lg overflow-hidden">
       <!-- Video Player -->
       <video
         ref="videoRef"
@@ -141,7 +141,7 @@ watch(() => props.videoUrl, (newUrl) => {
       </div>
     </div>
     
-    <div class="flex flex-wrap gap-4 justify-center">
+    <div class="py-4 flex flex-wrap gap-4 justify-center">
       <Button 
         @click="handleCrop" 
         :disabled="isProcessing" 
@@ -151,7 +151,7 @@ watch(() => props.videoUrl, (newUrl) => {
       >
         <div class="absolute inset-0 bg-primary/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
         <Cpu class="mr-2 h-5 w-5 relative z-10" />
-        <span class="relative z-10">Convert to 9:16</span>
+        <span class="relative z-10">Start Converting</span>
       </Button>
       
       <Button 
@@ -175,15 +175,6 @@ watch(() => props.videoUrl, (newUrl) => {
         Download
       </Button>
       
-      <Button 
-        v-if="processedUrl"
-        variant="secondary"
-        size="lg"
-        class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-none"
-      >
-        <Instagram class="mr-2 h-5 w-5" />
-        Share to Instagram
-      </Button>
     </div>
   </div>
 </template>
